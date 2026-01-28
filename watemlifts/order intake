@@ -1,0 +1,73 @@
+This workflow:
+    • Receives new orders from Google Forms
+    • Saves them in Google Sheets
+    • Generates Order ID
+    • Sends WhatsApp notification
+    • Sets order status
+🔹 Workflow Name
+Watts Lifts – Order Intake Automation
+🔹 Import Instructions
+    1. Open n8n
+    2. Click Import workflow
+    3. Paste JSON below
+    4. Update credentials (Google + WhatsApp)
+
+{
+  "name": "Watts Lifts - Order Intake",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "new-order",
+        "httpMethod": "POST",
+        "responseMode": "onReceived"
+      },
+      "name": "Webhook - New Order",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "item.order_id = 'WL-' + Date.now();\nitem.status = 'NEW ORDER';\nreturn item;"
+      },
+      "name": "Generate Order ID",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetId": "YOUR_GOOGLE_SHEET_ID",
+        "range": "Orders!A:G"
+      },
+      "name": "Save to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 1,
+      "position": [640, 300]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "https://api.whatsapp.com/send",
+        "jsonParameters": true,
+        "bodyParametersJson": "{ \"phone\": \"+256755985864\", \"message\": \"New Order Received: {{$json.order_id}}\" }"
+      },
+      "name": "Notify Admin on WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [860, 300]
+    }
+  ],
+  "connections": {
+    "Webhook - New Order": {
+      "main": [[{ "node": "Generate Order ID", "type": "main", "index": 0 }]]
+    },
+    "Generate Order ID": {
+      "main": [[{ "node": "Save to Google Sheets", "type": "main", "index": 0 }]]
+    },
+    "Save to Google Sheets": {
+      "main": [[{ "node": "Notify Admin on WhatsApp", "type": "main", "index": 0 }]]
+    }
+  }
+}
